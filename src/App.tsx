@@ -1,12 +1,12 @@
 import algosdk from "algosdk";
 import { useState, useEffect } from "react";
 import { clients } from "beaker-ts";
-import { HelloBeaker } from "./hellobeaker_client";
+import { KrowdFund } from "./krowdfund_client";
 
-import { AppBar, Box, Grid, Input, Toolbar } from "@mui/material";
+import { AppBar, Box, Grid, Input, Toolbar, Button } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 import { useWalletUI, WalletUI } from '@algoscan/use-wallet-ui'
-
+import Modal from "./components/Modal"
 
 // If you just need a placeholder signer
 const PlaceHolderSigner: algosdk.TransactionSigner = (
@@ -18,8 +18,8 @@ const PlaceHolderSigner: algosdk.TransactionSigner = (
 
 // AnonClient can still allow reads for an app but no transactions
 // can be signed
-const AnonClient = (client: algosdk.Algodv2, appId: number): HelloBeaker => {
-  return new HelloBeaker({
+const AnonClient = (client: algosdk.Algodv2, appId: number): KrowdFund => {
+  return new KrowdFund({
     // @ts-ignore
     client: client,
     signer: PlaceHolderSigner,
@@ -31,21 +31,22 @@ const AnonClient = (client: algosdk.Algodv2, appId: number): HelloBeaker => {
 export default function App() {
   // Start with no app id for this demo, since we allow creation
   // Otherwise it'd come in as part of conf
-  const [appId, setAppId] = useState<number>(0);
+  const [appId, setAppId] = useState<number>(166750934);
 
   // Setup config for client/network.
-  const [apiProvider, setApiProvider] = useState(clients.APIProvider.Sandbox);
-  const [network, setNetwork] = useState(clients.Network.SandNet);
+  const [apiProvider, setApiProvider] = useState(clients.APIProvider.AlgoNode);
+  const [network, setNetwork] = useState(clients.Network.TestNet);
   // Init our algod client
   const algodClient = clients.getAlgodClient(apiProvider, network);
 
   const [loading, setLoading] = useState(false);
+  const [modalStatus, setmodalStatus] = useState(false);
 
   // Set up user wallet from session
   const { activeAccount, signer } = useWalletUI();
 
   // Init our app client
-  const [appClient, setAppClient] = useState<HelloBeaker>(
+  const [appClient, setAppClient] = useState<KrowdFund>(
     AnonClient(algodClient, appId)
   );
 
@@ -60,7 +61,7 @@ export default function App() {
       activeAccount && activeAccount.address != appClient.sender
     ) {
       setAppClient(
-        new HelloBeaker({
+        new KrowdFund({
           client: algodClient,
           signer: signer,
           sender: activeAccount.address,
@@ -71,41 +72,58 @@ export default function App() {
   }, [activeAccount, appId, algodClient]);
 
   // Deploy the app on chain
-  async function createApp() {
-    setLoading(true);
-    console.log(appClient)
-    const { appId } = await appClient.create();
-    setAppId(appId);
-    alert(`Created app: ${appId}`);
-    setLoading(false);
+  // async function createApp() {
+  //   setLoading(true);
+  //   console.log(appClient)
+  //   const { appId, appAddress, txId } = await appClient.create();
+  //   console.log(appId)
+  //   console.log(appAddress)
+  //   console.log(txId)
+  //   setAppId(appId);
+  //   alert(`Created app: ${appId}`);
+  //   setLoading(false);
+  // }
+
+
+  async function addFunding(_name: string, _description: string, _amountNeeded: bigint) {
+
+    let _seed = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+      from: activeAccount?.address ? activeAccount.address : "",
+      suggestedParams: await algodClient.getTransactionParams().do(),
+      to: algosdk.getApplicationAddress(appId),
+      amount: BigInt(2000)
+    })
+
+    const result = await appClient.addFunding({ seed: _seed, name: _name, description: _description, amountNeeded: BigInt(_amountNeeded) * 1000000n, boxes=[]});
+    console.log(result.txID);
+
   }
 
-  // Call the greet function
-  async function greet() {
-    setLoading(true);
-    const ta = document.getElementById("name") as HTMLTextAreaElement;
-    const result = await appClient.hello({ name: ta.value });
-    alert(result.value);
-    setLoading(false);
+  async function toggleModal() {
+    if(modalStatus) {
+      setmodalStatus(false)
+    } else {
+      setmodalStatus(true)
+    }
+    console.log(modalStatus)
   }
-
   // The two actions we allow
-  const action = !appId ? (
-    <LoadingButton variant="outlined" onClick={createApp} loading={loading}>
-      Create App
-    </LoadingButton>
-  ) : (
-    <div>
-      <Box>
-        <Input type="text" id="name" placeholder="what is your name?"></Input>
-      </Box>
-      <Box marginTop="10px">
-        <LoadingButton variant="outlined" onClick={greet} loading={loading}>
-          Greet
-        </LoadingButton>
-      </Box>
-    </div>
-  );
+  // const action = !appId ? (
+  //   <LoadingButton variant="outlined" onClick={createApp} loading={loading}>
+  //     Create App
+  //   </LoadingButton>
+  // ) : (
+  //   <div>
+  //     <Box>
+  //       <Input type="text" id="name" placeholder="what is your name?"></Input>
+  //     </Box>
+  //     <Box marginTop="10px">
+  //       <LoadingButton variant="outlined" onClick={addFunding} loading={loading}>
+  //         Greet
+  //       </LoadingButton>
+  //     </Box>
+  //   </div>
+  // );
 
   // The app ui
   return (
@@ -118,15 +136,19 @@ export default function App() {
           </Box>
         </Toolbar>
       </AppBar>
+      <br/>
+      <Button variant="outlined" onClick={toggleModal}>Add Funding</Button>
+      <Modal addFunding={addFunding} toggleModal={toggleModal} modalStatus={modalStatus}/>
       <Grid
         container
         direction="column"
         justifyContent="center"
         alignItems="center"
       >
-        <Grid item lg>
+        {/* <Grid item lg>
           <Box margin="10px">{action}</Box>
-        </Grid>
+        </Grid> */}
+        
       </Grid>
     </div>
   );
