@@ -1,16 +1,85 @@
 {
-    "name": "HelloBeaker",
+    "name": "KrowdFund",
     "methods": [
         {
-            "name": "hello",
+            "name": "addFunding",
             "args": [
+                {
+                    "type": "pay",
+                    "name": "seed"
+                },
                 {
                     "type": "string",
                     "name": "name"
+                },
+                {
+                    "type": "string",
+                    "name": "description"
+                },
+                {
+                    "type": "uint64",
+                    "name": "amountNeeded"
                 }
             ],
             "returns": {
-                "type": "string"
+                "type": "void"
+            },
+            "desc": "create new funding"
+        },
+        {
+            "name": "donateFunds",
+            "args": [
+                {
+                    "type": "pay",
+                    "name": "seed"
+                },
+                {
+                    "type": "uint64",
+                    "name": "idx"
+                }
+            ],
+            "returns": {
+                "type": "void"
+            },
+            "desc": "Donate to a funding"
+        },
+        {
+            "name": "editFunding",
+            "args": [
+                {
+                    "type": "uint64",
+                    "name": "idx"
+                },
+                {
+                    "type": "string",
+                    "name": "name"
+                },
+                {
+                    "type": "string",
+                    "name": "description"
+                }
+            ],
+            "returns": {
+                "type": "void"
+            }
+        },
+        {
+            "name": "getLengthOfFundings",
+            "args": [],
+            "returns": {
+                "type": "uint64"
+            }
+        },
+        {
+            "name": "getSpecificFunding",
+            "args": [
+                {
+                    "type": "uint64",
+                    "name": "idx"
+                }
+            ],
+            "returns": {
+                "type": "(address,string,string,uint64,uint64,uint64)"
             }
         }
     ],
