@@ -1,11 +1,12 @@
+// @ts-nocheck 
+
 import algosdk from "algosdk";
 import { useState, useEffect } from "react";
 import { clients } from "beaker-ts";
 import { KrowdFund } from "./krowdfund_client";
 
-import { AppBar, Box, Grid, Input, Toolbar, Button, Typography, TextField } from "@mui/material";
-import { LoadingButton } from "@mui/lab";
-import Modal from '@mui/joy/Modal';
+import { AppBar, Box, Toolbar, Button } from "@mui/material";
+
 import { useWalletUI, WalletUI } from '@algoscan/use-wallet-ui'
 import Modals from "./components/Modals"
 
@@ -30,6 +31,20 @@ const AnonClient = (client: algosdk.Algodv2, appId: number): KrowdFund => {
   });
 };
 
+
+interface fundingItemProps {
+  _id: bigint,
+  owner: string,
+  name: string,
+  description: string,
+  date: bigint,
+  amountNeeded: number,
+  amountRaised: number,
+}
+
+// interface FundingProps {
+
+// }
 export default function App() {
 
   // Start with no app id for this demo, since we allow creation
@@ -62,7 +77,7 @@ export default function App() {
   // update our app client
     async function _getFundings() {
       await getFundings()
-      .then(_fundings => {
+      .then((_fundings: fundingItemProps[]) => {
         // console.log(_fundings)
 
         setFundings(_fundings)
@@ -231,7 +246,7 @@ export default function App() {
 
             // </Grid> */}
       <div className="grid grid-cols-3 gap-4 mx-10">
-        {fundings && fundings.map(_funding => (
+        {fundings && fundings.map((_funding: fundingItemProps) => (
           <div className="shadow-md p-5">
             <h2><u>{_funding.name}</u></h2>
             <h2>{_funding.description}</h2> <br />
