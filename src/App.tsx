@@ -3,10 +3,12 @@ import { useState, useEffect } from "react";
 import { clients } from "beaker-ts";
 import { KrowdFund } from "./krowdfund_client";
 
-import { AppBar, Box, Grid, Input, Toolbar, Button } from "@mui/material";
+import { AppBar, Box, Grid, Input, Toolbar, Button, Typography, TextField } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
+import Modal from '@mui/joy/Modal';
 import { useWalletUI, WalletUI } from '@algoscan/use-wallet-ui'
-import Modal from "./components/Modal"
+import Modals from "./components/Modals"
+
 
 // If you just need a placeholder signer
 const PlaceHolderSigner: algosdk.TransactionSigner = (
@@ -29,6 +31,7 @@ const AnonClient = (client: algosdk.Algodv2, appId: number): KrowdFund => {
 };
 
 export default function App() {
+
   // Start with no app id for this demo, since we allow creation
   // Otherwise it'd come in as part of conf
   const [appId, setAppId] = useState<number>(166750934);
@@ -41,6 +44,11 @@ export default function App() {
 
   const [loading, setLoading] = useState(false);
   const [modalStatus, setmodalStatus] = useState(false);
+  const [fundings, setFundings] = useState([]);
+  const [amount, setAmount] = useState<bigint>(0n);
+  const [name, setName] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+
 
   // Set up user wallet from session
   const { activeAccount, signer } = useWalletUI();
@@ -52,6 +60,16 @@ export default function App() {
 
   // If the account info, client, or app id change
   // update our app client
+    async function _getFundings() {
+      await getFundings()
+      .then(_fundings => {
+        // console.log(_fundings)
+
+        setFundings(_fundings)
+
+      })
+    }
+
   useEffect(() => {
     console.log(activeAccount, appId, algodClient)
     // Bad way to track connected status but...
@@ -69,7 +87,8 @@ export default function App() {
         })
       );
     }
-  }, [activeAccount, appId, algodClient]);
+    _getFundings()
+  }, [activeAccount]);
 
   // Deploy the app on chain
   // async function createApp() {
@@ -94,42 +113,98 @@ export default function App() {
       amount: BigInt(2000)
     })
 
-    const result = await appClient.addFunding({ seed: _seed, name: _name, description: _description, amountNeeded: BigInt(_amountNeeded) * 1000000n, boxes=[]});
-    console.log(result.txID);
+    // Get length of box
+    let _length = 0;
+    for(let boxes in await appClient.getApplicationBoxNames()) {
+      if(boxes != "hello") {
+        console.log(boxes)
+        _length++;
+      }
+    }
+    // console.log(_length)
+
+    const boxName = _length;
+    const result = await appClient.addFunding({ seed: _seed, name: _name, description: _description, amountNeeded: BigInt(_amountNeeded) * 1000000n}, {
+      boxes: [{
+        appIndex: appId,
+        name: algosdk.bigIntToBytes(Number(boxName), 8)
+      }]
+    });
+    // console.log(result.txID);
+    _getFundings()
 
   }
 
+  async function getFundings() {
+
+    const fundings = [];
+    for(let boxName in await appClient.getApplicationBoxNames()) {
+      if(boxName != "hello") {
+        console.log(boxName)
+        const idx = algosdk.bigIntToBytes(Number(boxName), 8);
+        const result = await appClient.getApplicationBox(idx)
+        const resultCodec = algosdk.ABIType.from('(address,string,string,uint64,uint64,uint64)')
+        const val = resultCodec.decode(result)
+        let obj = {
+          _id: boxName,
+          owner: val[0],
+          name: val[1],
+          description: val[2],
+          date: Number(val[3]),
+          amountNeeded: Number(val[4]),
+          amountRaised: Number(val[5]),
+        }
+        fundings.push(obj)
+      }
+    }
+    // console.log(fundings)
+    return fundings;
+    
+
+  }
+  
+  async function donateFunds(_idx: bigint, _owner: string, _amount: bigint) {
+    let _seed = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+      from: activeAccount?.address ? activeAccount.address : "",
+      suggestedParams: await algodClient.getTransactionParams().do(),
+      to: _owner,
+      amount: BigInt(_amount) * 1000000n
+    })
+    const result = await appClient.donateFunds({ seed: _seed, idx: BigInt(_idx)}, {
+      boxes: [{
+        appIndex: appId,
+        name: algosdk.bigIntToBytes(Number(_idx), 8)
+      }]
+    });
+
+    _getFundings()
+  }
+  
+  async function editFunding(_idx: bigint, _name: string, _description: string) {
+
+    const result = await appClient.editFunding({ idx: BigInt(_idx), name: _name, description: _description}, {
+      boxes: [{
+        appIndex: appId,
+        name: algosdk.bigIntToBytes(Number(_idx), 8)
+      }]
+    });
+    _getFundings()
+  }
   async function toggleModal() {
     if(modalStatus) {
       setmodalStatus(false)
     } else {
       setmodalStatus(true)
     }
-    console.log(modalStatus)
+    // console.log(modalStatus)
   }
-  // The two actions we allow
-  // const action = !appId ? (
-  //   <LoadingButton variant="outlined" onClick={createApp} loading={loading}>
-  //     Create App
-  //   </LoadingButton>
-  // ) : (
-  //   <div>
-  //     <Box>
-  //       <Input type="text" id="name" placeholder="what is your name?"></Input>
-  //     </Box>
-  //     <Box marginTop="10px">
-  //       <LoadingButton variant="outlined" onClick={addFunding} loading={loading}>
-  //         Greet
-  //       </LoadingButton>
-  //     </Box>
-  //   </div>
-  // );
 
   // The app ui
   return (
     <div className="App">
       <AppBar position="static">
         <Toolbar variant="regular">
+        <h1>KROWDFUND</h1>
           <Box sx={{ flexGrow: 1 }} />
           <Box>
             <WalletUI openState={false} primary='green' textColor='#FF0000' />
@@ -138,18 +213,56 @@ export default function App() {
       </AppBar>
       <br/>
       <Button variant="outlined" onClick={toggleModal}>Add Funding</Button>
-      <Modal addFunding={addFunding} toggleModal={toggleModal} modalStatus={modalStatus}/>
-      <Grid
-        container
-        direction="column"
-        justifyContent="center"
-        alignItems="center"
-      >
-        {/* <Grid item lg>
-          <Box margin="10px">{action}</Box>
-        </Grid> */}
-        
-      </Grid>
+
+      <Modals addFunding={addFunding} toggleModal={toggleModal} modalStatus={modalStatus}/>
+      <br /> <br />
+      
+            {/* // <Grid item xs spacing={2}>
+            //   <Box sx={{ border: 1 }}>
+            //     <Typography variant="h5">{_funding.name}</Typography>
+            //     <Typography variant="h6">{_funding.description}</Typography>
+            //     <Typography variant="h6">
+            //     <b>{algosdk.microalgosToAlgos(_funding.amountRaised)}/{algosdk.microalgosToAlgos(_funding.amountNeeded)} Algo</b> 
+            //     </Typography> <br />
+            //     <TextField id="outlined-basic" label="Donate" variant="outlined" /><br /><br />
+            //     <Button variant="contained" onClick={toggleModal}>Donate Algo</Button> 
+            //     <Button variant="contained" onClick={toggleModal}>Edit Funding</Button>
+            //   </Box>
+
+            // </Grid> */}
+      <div className="grid grid-cols-3 gap-4 mx-10">
+        {fundings && fundings.map(_funding => (
+          <div className="shadow-md p-5">
+            <h2><u>{_funding.name}</u></h2>
+            <h2>{_funding.description}</h2> <br />
+            <h2 className="text-2xl"><b>{algosdk.microalgosToAlgos(_funding.amountRaised)}/{algosdk.microalgosToAlgos(_funding.amountNeeded)} Algo</b></h2>
+            <br />
+            <input type="number" className="border-2 p-2" placeholder="Amount in Algo"
+            onChange={(e) => {setAmount(e.target.value as unknown as bigint)}}
+            />
+            <button
+              type="button"
+              className="uploadcare--button_primary inline-block rounded-full px-6 pt-2.5 pb-2 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca]"
+              onClick={() => donateFunds(_funding._id, _funding.owner, amount)}
+              >
+              Donate Algo
+            </button> <br /><br />
+            <input type="text" className="border-2 p-2" placeholder="Name"
+            onChange={(e) => {setName(e.target.value)}}
+            />
+            <input type="text" className="border-2 p-2" placeholder="Description"
+            onChange={(e) => {setDescription(e.target.value)}}
+            />
+            <button
+              type="button"
+              className="uploadcare--button_primary inline-block rounded-full px-6 pt-2.5 pb-2 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca]"
+              onClick={() => editFunding(_funding._id, name, description)}
+              >
+              Edit Funding
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -7,22 +7,22 @@ interface toggleProps {
     modalStatus: boolean;
 }
 
-export default function Modal({addFunding, toggleModal, modalStatus}: toggleProps) {
+export default function Modals({addFunding, toggleModal, modalStatus}: toggleProps) {
     const [name, setName] = useState<string>("")
     const [description, setDescription] = useState<string>("")
     const [amountNeeded, setAmountNeeded] = useState<bigint>(0n)
 
     async function handleSubmit(): Promise<void>{
-        // console.log(name)
-        // console.log(description)
-        // console.log(amountNeeded)
+        
         await addFunding(name, description, amountNeeded)
         toggleModal()
     }
 
     const modal = modalStatus ? (
-        <div id="authentication-modal" aria-hidden="true" className="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] md:h-full">
-    <div className="relative w-full h-full max-w-md md:h-auto">
+        <>
+
+        <div id="authentication-modal" aria-hidden="true" className="block text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+        <div className="relative w-full h-full max-w-md md:h-auto">
         {/* <!-- Modal content --> */}
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
             
@@ -43,7 +43,8 @@ export default function Modal({addFunding, toggleModal, modalStatus}: toggleProp
                     <button type="button" className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800 dark:hover:text-white" data-modal-hide="authentication-modal">
                 <span className="sr-only" onClick={toggleModal}>Close modal</span>
             </button>
-                    <button type="submit" className="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" onClick={() => {
+                    <button type="submit" className="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" onClick={(e) => {
+                        e.preventDefault()
                         handleSubmit()
                     }}>Submit</button>
                 </form>
@@ -51,12 +52,13 @@ export default function Modal({addFunding, toggleModal, modalStatus}: toggleProp
         </div>
     </div>
 </div> 
+</>
 
     ) : ("")
 
-  return (
-    <>
-    {modal}
-    </>
-  )
+    return (
+        <>
+        {modal}
+        </>
+   )
 }
