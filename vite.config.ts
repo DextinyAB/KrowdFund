@@ -7,10 +7,13 @@ export default defineConfig({
   optimizeDeps: {
     include: ['@perawallet/connect'],
   },
+  build: {
+    target: "es2020"
+  },
   define: {
-    "process": {
-      "env":{},
-      "browser":true,
-    },
+    // "process": {
+    //   "env":{},
+    //   "browser":true,
+    // },
   },
 });

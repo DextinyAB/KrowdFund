@@ -7,8 +7,9 @@ import { KrowdFund } from "./krowdfund_client";
 
 import { AppBar, Box, Toolbar, Button } from "@mui/material";
 
-import { useWalletUI, WalletUI } from '@algoscan/use-wallet-ui'
+import { useWalletUI, WalletUI } from '@algoscan/use-wallet-ui/dist/index.js'
 import Modals from "./components/Modals"
+
 
 
 // If you just need a placeholder signer
@@ -278,6 +279,7 @@ export default function App() {
           </div>
         ))}
       </div>
+      
     </div>
   );
 }
