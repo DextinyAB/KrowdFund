@@ -26,7 +26,7 @@ https://darling-mochi-71d434.netlify.app/
 - [yarn install](https://classic.yarnpkg.com/lang/en/docs/install/#windows-stable)
 - [yarn run dev](https://classic.yarnpkg.com/lang/en/docs/cli/run/)
 
-####Conclusion:
+#### Conclusion:
 
 Hence, in this tutorial you learned how to implement and interact with the Crowd funding dapp. 
 
