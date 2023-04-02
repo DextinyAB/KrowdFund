@@ -50,7 +50,9 @@ export default function App() {
 
   // Start with no app id for this demo, since we allow creation
   // Otherwise it'd come in as part of conf
-  const [appId, setAppId] = useState<number>(166750934);
+
+  const [appId, setAppId] = useState<number>(171237480);
+  
 
   // Setup config for client/network.
   const [apiProvider, setApiProvider] = useState(clients.APIProvider.AlgoNode);
@@ -264,21 +266,28 @@ export default function App() {
               Donate Algo
             </button> <br /><br />
             <input type="text" className="border-2 p-2" placeholder="Name"
+            value={name}
             onChange={(e) => {setName(e.target.value)}}
             />
             <input type="text" className="border-2 p-2" placeholder="Description"
+            value={description}
             onChange={(e) => {setDescription(e.target.value)}}
             />
             <button
               type="button"
               className="uploadcare--button_primary inline-block rounded-full px-6 pt-2.5 pb-2 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca]"
-              onClick={() => editFunding(_funding._id, name, description)}
+              onClick={() => {
+                editFunding(_funding._id, name, description);
+                setName("")
+                setDescription("")
+              }}
               >
               Edit Funding
             </button>
           </div>
         ))}
       </div>
+      {/* <button onClick={() => createApp()}>createApp</button> */}
       
     </div>
   );
